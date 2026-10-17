@@ -202,28 +202,34 @@ def print_natal():
         print(f"{name:11} {fmt(lon):16} {sign} {n}: {sym}")
 
 
-def print_today(as_json=False):
+def print_sky(as_json=False):
+    """Medium-length expanded view — for /sky. More than the widget, not overwhelming."""
     data = compute_today()
     if as_json:
         print(json.dumps(data, indent=1, ensure_ascii=False))
         return
-    print(f"THE SKY — {data['date']}")
-    print("="*90)
     mp = data["moon_phase"]
-    print(f"Moon: {mp['phase']} ({mp['illumination_pct']}% illuminated, elongation {mp['elongation']}°)")
+    sun = data["luminaries"]["Sun"]
+    moon = data["luminaries"]["Moon"]
+    sun_sign = sun['pos'].split()[0]
+    glyph = SIGN_GLYPHS.get(sun_sign, "")
+    print(f"{mp['emoji']} {mp['phase']}")
+    print(f"{glyph} {sun_sign} — {sun['sabian']}")
+    print(f"☾ Moon at {moon['pos']} — {moon['sabian']}")
     print()
-    print("Natal Big Three:")
+    # Natal for reference
+    print("Your chart:")
     for k, v in data["natal_big_three"].items():
-        print(f"  {k:10} {v['pos']:14}  {v['sabian']}")
+        print(f"  {k}: {v['sabian']}")
     print()
-    print("Today's luminaries:")
-    for k, v in data["luminaries"].items():
-        print(f"  {k:10} {v['pos']:14}  {v['sabian']}")
+    # Top 3 transits + citation
+    print(f"Active transits (tightest of {len(data['transits'])}):")
+    for t in data["transits"][:3]:
+        print(f"  {t['transit']} {t['aspect']} your {t['natal']}")
+        print(f"    transit {t['transit_pos']} — {t['transit_sabian']}")
+        print(f"    natal {t['natal_pos']} — {t['natal_sabian']}")
     print()
-    print(f"Transits to natal ({len(data['transits'])} within orb), tightest first:")
-    for t in data["transits"][:12]:
-        print(f"  T-{t['transit']:10} {t['aspect']:12} natal {t['natal']:10} orb {t['orb']:+.2f}°")
-        print(f"       transit at {t['transit_pos']} — {t['transit_sabian']}")
+    print("> /sky --deep for corpus readings, /sky natal for the chart")
 
 
 def print_hermes():
@@ -274,7 +280,7 @@ if __name__ == "__main__":
     if cmd == "natal":
         print_natal()
     elif cmd == "today":
-        print_today(as_json="--json" in sys.argv)
+        print_sky(as_json="--json" in sys.argv)
     elif cmd == "brief":
         print_brief()
     elif cmd == "hermes":
