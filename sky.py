@@ -27,6 +27,9 @@ import swisseph as swe
 HERE = os.path.dirname(os.path.abspath(__file__))
 SIGNS = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpio",
          "Sagittarius","Capricorn","Aquarius","Pisces"]
+SIGN_GLYPHS = {"Aries":"♈","Taurus":"♉","Gemini":"♊","Cancer":"♋","Leo":"♌",
+               "Virgo":"♍","Libra":"♎","Scorpio":"♏","Sagittarius":"♐",
+               "Capricorn":"♑","Aquarius":"♒","Pisces":"♓"}
 
 # Paul's birth data (confirmed 2026-10-14). Manila, Philippines, UTC+8, no DST.
 NATAL = {
@@ -248,19 +251,20 @@ def print_brief():
     mp = data["moon_phase"]
     # The day's symbol = the Sun's current degree symbol (it moves ~1/day)
     sun = data["luminaries"]["Sun"]
-    # Phase with emoji — feel first, no percentage
+    # Phase with emoji — feel first
     l1 = f"{mp['emoji']} {mp['phase']}"
-    # Sun sign only (not the degree minutes) + aura keyword
+    # Sign glyph + sign name + Sabian symbol (the day's image)
     sun_sign = sun['pos'].split()[0]
-    l2 = f"{sun_sign} — {sun['sabian']}"
+    glyph = SIGN_GLYPHS.get(sun_sign, "")
+    l2 = f"{glyph} {sun_sign} — {sun['sabian']}"
     lines = [l1, l2]
+    # Transit: feel-word + both planetary bodies shown clearly
     if data["transits"]:
         t = data["transits"][0]
-        # 'Aura' word: which planet is active + a feelword keyed to the aspect
         feel = {"sextile":"stirring","conjunction":"merging","trine":"flowing",
                 "square":"pressing","opposition":"facing"}
         feelword = feel.get(t['aspect'], t['aspect'])
-        l3 = f"{feelword}: {t['transit']} + {t['natal']}"
+        l3 = f"↻ {t['transit']} {t['aspect']} your {t['natal']}"
         lines.append(l3)
     print("\n".join(lines))
 
