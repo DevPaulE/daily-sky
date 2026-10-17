@@ -54,3 +54,18 @@ Engine path is configurable via `SKY_ENGINE` / `SKY_PYTHON`.
 - Swiss Ephemeris (`pyswisseph`) — JPL DE431-based; the standard high-precision engine.
 - Sabian symbol table — Sabian Calculator (Ruby Fumizki) app data.
 - Reading corpus — `pam-gregory-you-dont-really-believe-in-astrology.md`, `heather-ensworth-astrological-ages-and-galactic-center.md`, `sabian-symbols-system-reference.md`, `astrology-as-mirror-paul-s-natal-chart-and-transits.md`.
+
+## The browser surface (`serve.py`)
+
+A local HTTP server, the durable-pi / odysseus-factory pattern:
+
+```bash
+.venv/bin/python serve.py            # serves http://localhost:4782 and opens it
+.venv/bin/python serve.py --no-open  # serve only
+```
+
+Routes: `/` today's card · `/natal` the chart · `/raw` plain text.
+The page renders the Sabian artwork (Ruby Fumizki) for the moon and every transit,
+plus the corpus footer. Facts + lookups, no predictions.
+
+`/sky` in pi starts this server if it is not running and opens the browser.
