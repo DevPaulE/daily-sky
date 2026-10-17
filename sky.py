@@ -116,15 +116,19 @@ def moon_phase(jd):
     moon, _ = swe.calc_ut(jd, swe.MOON)
     elong = (moon[0] - sun[0]) % 360
     illum = (1 - math.cos(math.radians(elong))) / 2 * 100
-    if elong < 22.5 or elong >= 337.5: phase = "New Moon"
-    elif elong < 67.5: phase = "Waxing Crescent"
-    elif elong < 112.5: phase = "First Quarter"
-    elif elong < 157.5: phase = "Waxing Gibbous"
-    elif elong < 202.5: phase = "Full Moon"
-    elif elong < 247.5: phase = "Waning Gibbous"
-    elif elong < 292.5: phase = "Last Quarter"
-    else: phase = "Waning Crescent"
-    return {"phase": phase, "elongation": round(elong,2), "illumination_pct": round(illum,1)}
+    emoji_phases = [("New Moon","🌑"),("Waxing Crescent","🌒"),("First Quarter","🌓"),
+                    ("Waxing Gibbous","🌔"),("Full Moon","🌕"),("Waning Gibbous","🌖"),
+                    ("Last Quarter","🌗"),("Waning Crescent","🌘")]
+    if elong < 22.5 or elong >= 337.5: idx = 0
+    elif elong < 67.5: idx = 1
+    elif elong < 112.5: idx = 2
+    elif elong < 157.5: idx = 3
+    elif elong < 202.5: idx = 4
+    elif elong < 247.5: idx = 5
+    elif elong < 292.5: idx = 6
+    else: idx = 7
+    phase, emoji = emoji_phases[idx]
+    return {"phase": phase, "emoji": emoji, "elongation": round(elong,2), "illumination_pct": round(illum,1)}
 
 
 def aspect_between(a, b):
@@ -225,10 +229,12 @@ def print_hermes():
     mp = data["moon_phase"]
     sun = data["luminaries"]["Sun"]
     sun_sign = sun['pos'].split()[0]
-    parts = [ f"Sky: {mp['phase']} moon.", f"Sun in {sun_sign} \u2014 '{sun['sabian']}'." ]
+    parts = [ f"{mp['emoji']} {mp['phase']}", f"Sun in {sun_sign}: {sun['sabian']}." ]
     if data["transits"]:
         t = data["transits"][0]
-        parts.append(f"Closest: {t['transit']} {t['aspect']} your {t['natal']}.")
+        feel = {"sextile":"stirring","conjunction":"merging","trine":"flowing",
+                "square":"pressing","opposition":"facing"}
+        parts.append(f"{feel.get(t['aspect'],t['aspect'])}: {t['transit']}+{t['natal']}.")
     line = " ".join(parts)
     if len(line) > 240:
         line = line[:237] + "..."
@@ -242,12 +248,20 @@ def print_brief():
     mp = data["moon_phase"]
     # The day's symbol = the Sun's current degree symbol (it moves ~1/day)
     sun = data["luminaries"]["Sun"]
-    l1 = f"{mp['phase']}  ·  {mp['illumination_pct']}% lit"
-    l2 = f"{sun['pos']}  ·  {sun['sabian']}"
+    # Phase with emoji — feel first, no percentage
+    l1 = f"{mp['emoji']} {mp['phase']}"
+    # Sun sign only (not the degree minutes) + aura keyword
+    sun_sign = sun['pos'].split()[0]
+    l2 = f"{sun_sign} — {sun['sabian']}"
     lines = [l1, l2]
     if data["transits"]:
         t = data["transits"][0]
-        lines.append(f"{t['transit']} {t['aspect']} natal {t['natal']}  ({t['orb']:+.2f}°)")
+        # 'Aura' word: which planet is active + a feelword keyed to the aspect
+        feel = {"sextile":"stirring","conjunction":"merging","trine":"flowing",
+                "square":"pressing","opposition":"facing"}
+        feelword = feel.get(t['aspect'], t['aspect'])
+        l3 = f"{feelword}: {t['transit']} + {t['natal']}"
+        lines.append(l3)
     print("\n".join(lines))
 
 
