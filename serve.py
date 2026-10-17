@@ -358,6 +358,87 @@ def transit_html(t, i):
  </div></div></div>"""
 
 
+def natal_page() -> str:
+    """Render Paul's natal chart as a proper reference page."""
+    raw = run_engine("natal")
+    # Parse fixed-width table: body (12), deg (23+), sabian (35+)
+    bodies = []
+    for line in raw.split("\n"):
+        if len(line) < 35:
+            continue
+        name = line[:12].strip()
+        if name == "Body" or name.startswith("-") or "°" not in line:
+            continue
+        pos_part = line[12:35].strip()
+        pm = pos_part.split()
+        if len(pm) >= 2:
+            sign = pm[0]
+            deg_str = pm[1].split("°")[0]
+            deg_digits = "".join(c for c in deg_str if c.isdigit())
+            if not deg_digits:
+                continue
+            deg_c = int(deg_digits) + 1
+            bodies.append((name, sign, deg_c))
+
+    def card(name, sign, deg):
+        sym = sabian(sign, deg)
+        img = sabian_img(sign, deg)
+        prev = _prev_block(sign, deg)
+        return f"""<div class="card"><div class="imgrow">
+ <img src="{img}" alt="{sym}">
+ <div style="flex:1">
+  <div style="font-size:18px">{SIGN_GLYPH.get(sign, "")} {sign} — <b>{name}</b></div>
+  <div class="sym" style="font-size:17px;margin:6px 0 4px">"{html.escape(sym)}"</div>
+  {prev}
+ </div></div></div>"""
+
+    # Big three first, then the rest
+    big3_names = ["Sun", "Moon", "Ascendant"]
+    big3_list = [b for b in bodies if b[0] in big3_names]
+    rest = [b for b in bodies if b[0] not in big3_names]
+
+    big3_rows = "".join(card(*b) for b in big3_list)
+    all_rows = "".join(card(*b) for b in bodies)
+
+    css = """
+ :root { color-scheme:dark; }
+ body { margin:0; background:#0d0d12; color:#e8e6e3; font:16px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+ .wrap { max-width:760px; margin:0 auto; padding:36px 22px 80px; }
+ h1 { font-size:15px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:#c9a96a; margin:0 0 20px; }
+ .sub { color:#7a7a88; font-size:12px; margin:0 0 24px; }
+ h2 { font-size:12px; letter-spacing:.13em; text-transform:uppercase; color:#7a7a88; margin:28px 0 12px; font-weight:600; }
+ .card { background:#14141b; border:1px solid #23232e; border-radius:14px; padding:20px 22px; margin:12px 0; }
+ .imgrow { display:flex; gap:18px; align-items:flex-start; }
+ .imgrow img { width:120px; height:120px; border-radius:10px; object-fit:cover; border:1px solid #2a2a38; flex:0 0 auto; }
+ .sym { font-style:italic; color:#d8cbb0; }
+ .prev { color:#6f6f7d; font-size:13px; margin:6px 0 2px; }
+ .prev .dir { color:#8fb3d9; font-size:12px; }
+ a { color:#8fb3d9; text-decoration:none; }
+ a:hover { text-decoration:underline; }
+ .foot { margin-top:36px; font-size:12px; color:#5c5c68; line-height:1.6; }
+ .hear { margin-top:10px; font-size:12.5px; }
+"""
+
+    return f"""<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Natal — Paul</title>
+<style>{css}</style></head><body><div class="wrap">
+ <h1>Natal Chart</h1>
+ <div class="sub">Born 6 Aug 1997 14:03 Manila (UTC+8) · Swiss Ephemeris (JPL DE431) · Placidus houses</div>
+ <h2>Big Three</h2>
+ {big3_rows}
+ <h2>All Bodies</h2>
+ {all_rows}
+ <div class="foot">
+  Computed from Swiss Ephemeris (ground truth). Lisa's PDF retained as historical record of her session.<br>
+  Sabian symbols: fixed 360 table (Sabian Calculator / Ruby Fumizki). Burgess companion content: per-degree video series and onboarding playlist.<br>
+  <b>No predictive claim is made.</b> Astrology is a mirror, not evidence.<br>
+  <a href="/">today's sky</a>
+ </div>
+ {MODAL}
+</div></body></html>"""
+
+
 def render(path):
     d = engine_json()
     mp, sun, moon = d["moon_phase"], d["luminaries"]["Sun"], d["luminaries"]["Moon"]
@@ -390,8 +471,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 out = run_engine("today")
                 body, ctype = f"<pre>{html.escape(out)}</pre>", "text/html"
             elif self.path == "/natal":
-                out = run_engine("natal")
-                body, ctype = f"<pre style='font-size:13px'>{html.escape(out)}</pre>", "text/html"
+                body, ctype = natal_page(), "text/html"
             else:
                 body, ctype = render(self.path), "text/html"
         except Exception as e:
