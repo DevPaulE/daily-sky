@@ -20,6 +20,24 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 4782
 DEGREE_VID_URL = "https://www.youtube.com/watch?v={id}"
 
+# Onboarding-playlist video IDs, for timestamped deep-links into the companion quotes.
+ONBOARD = {
+    "V1":  "ggRgFEusE04",   # Fascinating Easy First Steps
+    "V5":  "iJbyPKewVuA",   # How to Progress Further
+    "V9":  "q655Le5wKl0",   # The Best Question
+    "V10": "dX2F71pu2hI",   # Wisdom
+}
+
+
+def yt_link(vid: str, start: int | None = None, label: str | None = None) -> str:
+    """A link that opens the in-page embed modal, falling back to YouTube."""
+    url = f"https://www.youtube.com/watch?v={vid}"
+    if start:
+        url += f"&t={int(start)}s"
+    text = label or "watch"
+    return (f'<a href="{url}" target="_blank" rel="noopener" '
+            f'onclick="return skyVideo(event, \'{vid}\', {int(start or 0)})">{text}</a>')
+
 SIGN_NUM = {"Aries":1,"Taurus":2,"Gemini":3,"Cancer":4,"Leo":5,"Virgo":6,"Libra":7,
             "Scorpio":8,"Sagittarius":9,"Capricorn":10,"Aquarius":11,"Pisces":12}
 NUM_SIGN = {v:k for k,v in SIGN_NUM.items()}
@@ -69,65 +87,80 @@ def burgess_video(sign: str, deg: int) -> dict | None:
     return None
 
 # --- Curated Burgess quotes ---
+# (tag, source label, quote, video id, start seconds)
 BURGESS_QUOTES = [
     # Reverse process (V1)
-    ("reverse process", "J. Burgess, V1",
+    ("reverse process", "J. Burgess, First Steps",
      "To understand any degree, look at the previous degree. "
      "To master Taurus 16, you've got to master Taurus 15 first. "
-     "The sequence runs backwards — different from Rudhyar's forward progression."),
+     "The sequence runs backwards — different from Rudhyar's forward progression.",
+     ONBOARD["V1"], 492),
     # Seven words (V5)
-    ("seven words", "J. Burgess, V5",
+    ("seven words", "J. Burgess, Progress Further",
      "NO (identity), HELLO (expansion), THANK YOU (felt-sense of the degree), "
      "GOODBYE (what changes by following this wisdom), PLEASE (life vision), "
-     "SORRY (pitfalls, shadow side), YES (allow it all to flow)."),
+     "SORRY (pitfalls, shadow side), YES (allow it all to flow).",
+     ONBOARD["V5"], 30),
     # Sun (V5)
-    ("sun", "J. Burgess, V5",
+    ("sun", "J. Burgess, Progress Further",
      "The sun's position is the essence of who we really are — our self-identity. "
      "1/360th specificity is the point. One degree is not 'ok, I'm Taurus,' "
-     "a twelfth of the world. You want it very specific indeed."),
+     "a twelfth of the world. You want it very specific indeed.",
+     ONBOARD["V5"], 67),
     # Moon (V5)
-    ("moon", "J. Burgess, V5",
+    ("moon", "J. Burgess, Progress Further",
      "The moon represents unconsciousness — familiarity. Our family, our hometown, our "
      "habits. We feel them but we don't really know why. The moon sign answers: why? "
-     "Bringing what was unconscious into consciousness moves us closer to realization."),
+     "Bringing what was unconscious into consciousness moves us closer to realization.",
+     ONBOARD["V5"], 309),
     # Study method (V5)
-    ("study", "J. Burgess, V5",
+    ("study", "J. Burgess, Progress Further",
      "Study the exact words that have been used, the strangeness of the image. "
      "Does this image appear in your life? How did you respond — positively or negatively? "
-     "Did you deny it or accept it open-heartedly?"),
+     "Did you deny it or accept it open-heartedly?",
+     ONBOARD["V5"], 162),
     # Speaking (V5)
-    ("speak", "J. Burgess, V5",
+    ("speak", "J. Burgess, Progress Further",
      "It is not enough to know that something applies to you intuitively as a feeling. "
      "You have to be able to speak about it using the Sabian symbol. "
-     "To be able to explain it to somebody else, to talk about it clearly."),
+     "To be able to explain it to somebody else, to talk about it clearly.",
+     ONBOARD["V5"], 261),
     # Seek (V9)
-    ("seek", "J. Burgess, V9",
+    ("seek", "J. Burgess, The Best Question",
      "Seek and ye shall find. Seeking is active engagement — different from noticing "
      "or observing. Spend most of your time on the question, not the answer. "
-     "If the question is right, the answer is inherent."),
+     "If the question is right, the answer is inherent.",
+     ONBOARD["V9"], 108),
     # Saturn three levels (V5)
-    ("saturn", "J. Burgess, V5",
+    ("saturn", "J. Burgess, Progress Further",
      "Saturn has three operating levels: asleep (lower), aware but struggling (middle), "
      "integrated and healed (higher). The Sabian symbol shows you which level you're on "
-     "for that degree."),
+     "for that degree.",
+     ONBOARD["V5"], 0),
     # Wisdom (V10)
-    ("wisdom", "J. Burgess, V10",
+    ("wisdom", "J. Burgess, Wisdom",
      "Wisdom is not only truth, it is also loving. It is not only love, it is truthful. "
-     "To find a way to live, discover where these two paths are one."),
+     "To find a way to live, discover where these two paths are one.",
+     ONBOARD["V10"], 40),
     # Common sense (V10)
-    ("common-sense", "J. Burgess, V10",
+    ("common-sense", "J. Burgess, Wisdom",
      "The secret of life is not a secret at all. It is simply a series of common-sense "
      "realizations backed up with reasonable self-discipline and moderation of impulses. "
-     "Do what you feel — unless those feelings are inappropriate."),
+     "Do what you feel — unless those feelings are inappropriate.",
+     ONBOARD["V10"], 96),
 ]
 
 def burgess_quote(tag: str) -> str:
-    """Pick the quote closest to the given tag."""
-    for t, src, q in BURGESS_QUOTES:
+    """Render the companion quote with a timestamped 'hear him say it' link."""
+    for t, src, q, vid, start in BURGESS_QUOTES:
         if t == tag:
-            return f"“{q}” — <b>{src}</b>"
+            hear = yt_link(vid, start, "▶ hear him say it")
+            return (f'“{html.escape(q)}” <span class="src">— <b>{src}</b></span>'
+                    f'<div class="hear">{hear}</div>')
     # fallback: the general reverse-process quote
-    return burgess_quote("reverse process")
+    t, src, q, vid, start = BURGESS_QUOTES[0]
+    return (f'“{html.escape(q)}” <span class="src">— <b>{src}</b></span>'
+            f'<div class="hear">{yt_link(vid, start, "▶ hear him say it")}</div>')
 
 
 # --- Engine bridge ---
@@ -221,7 +254,57 @@ PAGE = """<!doctype html><html><head><meta charset="utf-8">
   <b>No predictive claim is made.</b> Astrology is a mirror, not evidence.<br>
   <a href="/raw">plain text</a>
  </div>
+{modal}
 </div></body></html>"""
+
+
+# The in-page embed modal — the Analyst's interaction (click and it plays),
+# with none of the local-mp4 pipeline. Braces are literal here, so this block is
+# kept out of PAGE.format().
+MODAL = """
+<div id="sky-modal" onclick="if(event.target===this)skyClose()">
+  <div class="mcard">
+    <div class="mhead"><span id="mtitle"></span>
+      <button onclick="skyClose()" aria-label="close">✕</button></div>
+    <iframe id="mframe" allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen frameborder="0"></iframe>
+    <div class="mfoot"><a id="mlink" target="_blank" rel="noopener">open on YouTube ↗</a></div>
+  </div>
+</div>
+<style>
+ #sky-modal { display:none; position:fixed; inset:0; background:rgba(4,4,8,.88);
+   backdrop-filter:blur(6px); z-index:50; align-items:center; justify-content:center; padding:24px; }
+ #sky-modal.on { display:flex; }
+ .mcard { background:#101018; border:1px solid #2b2b3a; border-radius:16px;
+   width:min(880px,100%); overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,.7); }
+ .mhead { display:flex; align-items:center; justify-content:space-between;
+   padding:12px 16px; font-size:13px; color:#c9a96a; letter-spacing:.03em; }
+ .mhead button { background:none; border:0; color:#7a7a88; font-size:16px; cursor:pointer; }
+ .mhead button:hover { color:#e8e6e3; }
+ #mframe { width:100%; aspect-ratio:16/9; display:block; background:#000; }
+ .mfoot { padding:10px 16px; font-size:12px; }
+ .hear { margin-top:10px; font-size:12.5px; }
+</style>
+<script>
+function skyVideo(e, id, start) {
+  e.preventDefault();
+  var f = document.getElementById('mframe');
+  var q = 'autoplay=1&rel=0' + (start > 0 ? '&start=' + start : '');
+  f.src = 'https://www.youtube.com/embed/' + id + '?' + q + '&origin=' + location.origin;
+  document.getElementById('mlink').href =
+    'https://www.youtube.com/watch?v=' + id + (start > 0 ? '&t=' + start + 's' : '');
+  document.getElementById('mtitle').textContent =
+    (start > 0 ? 'Burgess · from ' + Math.floor(start/60) + ':' + String(start%60).padStart(2,'0') : 'James Burgess');
+  document.getElementById('sky-modal').classList.add('on');
+  return false;
+}
+function skyClose() {
+  document.getElementById('sky-modal').classList.remove('on');
+  document.getElementById('mframe').src = '';
+}
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') skyClose(); });
+</script>
+"""
 
 
 def _parse_pos(pos: str):
@@ -240,13 +323,13 @@ def _prev_block(sign: str, deg: int) -> str:
 
     # Burgess video for previous degree
     vid = burgess_video(ps, pd)
-    vid_link = f'· <a href="{vid["url"]}">video</a>' if vid else ""
+    vid_link = f'· {yt_link(vid["id"], None, "video")}' if vid else ""
 
     # Burgess video for this degree
     this_vid = burgess_video(sign, deg)
     this_link = ""
     if this_vid:
-        this_link = f'🎬 <a href="{this_vid["url"]}">Burgess: {sign} {deg}</a>'
+        this_link = f'🎬 {yt_link(this_vid["id"], None, f"Burgess: {sign} {deg}")}'
 
     prev_glyph = SIGN_GLYPH.get(ps, "")
     return (f'<div class="prev dir">← previous: {prev_glyph} {ps} {pd} — '
@@ -295,6 +378,7 @@ def render(path):
         moon_prev=_prev_block(moon_sign, moon_deg),
         big3=big3, transits=transits,
         burgess_quote=burgess_quote("reverse process"),
+        modal=MODAL,
     )
     return body
 
